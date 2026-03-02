@@ -29,6 +29,13 @@ function RootLayoutNav() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="notifications"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );

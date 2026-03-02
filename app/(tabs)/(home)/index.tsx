@@ -188,7 +188,12 @@ export default function HomeScreen() {
               <Text style={styles.userName}>{user?.name ?? 'Usuario'}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.bellBtn}>
+          <TouchableOpacity
+            style={styles.bellBtn}
+            onPress={() => router.push('/notifications')}
+            activeOpacity={0.7}
+            testID="notifications-button"
+          >
             <Bell color={Colors.white} size={22} />
             {activeRequests.length > 0 && (
               <View style={styles.badge}>
