@@ -1,0 +1,60 @@
+import { ServiceCategory } from '@/types';
+
+export const categories: ServiceCategory[] = [
+  {
+    id: 'health',
+    name: 'Salud y Bienestar',
+    icon: 'Heart',
+    color: '#EF4444',
+    description: 'Telemedicina, consultas y emergencias médicas',
+    servicesCount: 5,
+  },
+  {
+    id: 'home',
+    name: 'Asistencia Hogar',
+    icon: 'Home',
+    color: '#F59E0B',
+    description: 'Reparaciones, mantenimiento y emergencias del hogar',
+    servicesCount: 3,
+  },
+  {
+    id: 'vehicle',
+    name: 'Asistencia Vehículo',
+    icon: 'Car',
+    color: '#19C37D',
+    description: 'Grúas, asistencia vial y emergencias vehiculares',
+    servicesCount: 3,
+  },
+  {
+    id: 'pet',
+    name: 'Asistencia Mascotas',
+    icon: 'PawPrint',
+    color: '#10B981',
+    description: 'Veterinario a domicilio y orientación telefónica',
+    servicesCount: 2,
+  },
+  {
+    id: 'legal',
+    name: 'Legal y Financiero',
+    icon: 'Scale',
+    color: '#8B5CF6',
+    description: 'Asesoría legal telefónica y orientación financiera',
+    servicesCount: 2,
+  },
+  {
+    id: 'women',
+    name: 'Plan Mujer',
+    icon: 'Sparkles',
+    color: '#EC4899',
+    description: 'Servicios especializados para la mujer',
+    servicesCount: 3,
+  },
+  {
+    id: 'corporate',
+    name: 'Servicios Corporativos',
+    icon: 'Building2',
+    color: '#0F8F5C',
+    description: 'Soluciones integrales para empresas',
+    servicesCount: 4,
+  },
+];
