@@ -8,7 +8,6 @@ import {
   Modal,
   FlatList,
   Animated,
-  Platform,
   TextInput as NativeTextInput,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -296,32 +295,13 @@ export default function PlanDetailScreen() {
             <View style={styles.searchBar}>
               <Search color={Colors.textMuted} size={18} />
               <View style={styles.searchInputWrap}>
-                {Platform.OS === 'web' ? (
-                  <input
-                    type="text"
-                    value={citySearch}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCitySearch(e.target.value)}
-                    placeholder="Buscar ciudad..."
-                    style={{
-                      flex: 1,
-                      fontSize: 14,
-                      border: 'none',
-                      outline: 'none',
-                      backgroundColor: 'transparent',
-                      color: Colors.textPrimary,
-                      fontFamily: 'inherit',
-                      width: '100%',
-                    } as React.CSSProperties}
-                  />
-                ) : (
-                  <NativeTextInput
-                    style={styles.searchInput}
-                    value={citySearch}
-                    onChangeText={setCitySearch}
-                    placeholder="Buscar ciudad..."
-                    placeholderTextColor={Colors.textMuted}
-                  />
-                )}
+                <NativeTextInput
+                  style={styles.searchInput}
+                  value={citySearch}
+                  onChangeText={setCitySearch}
+                  placeholder="Buscar ciudad..."
+                  placeholderTextColor={Colors.textMuted}
+                />
               </View>
             </View>
 

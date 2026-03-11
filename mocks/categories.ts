@@ -15,7 +15,7 @@ export const categories: ServiceCategory[] = [
     icon: 'Home',
     color: '#F59E0B',
     description: 'Reparaciones, mantenimiento y emergencias del hogar',
-    servicesCount: 3,
+    servicesCount: 6,
   },
   {
     id: 'vehicle',
@@ -31,7 +31,7 @@ export const categories: ServiceCategory[] = [
     icon: 'PawPrint',
     color: '#10B981',
     description: 'Veterinario a domicilio y orientación telefónica',
-    servicesCount: 2,
+    servicesCount: 3,
   },
   {
     id: 'legal',
@@ -55,6 +55,6 @@ export const categories: ServiceCategory[] = [
     icon: 'Building2',
     color: '#0F8F5C',
     description: 'Soluciones integrales para empresas',
-    servicesCount: 4,
+    servicesCount: 2,
   },
 ];
