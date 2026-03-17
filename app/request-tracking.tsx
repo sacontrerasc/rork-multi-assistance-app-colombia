@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,10 +18,13 @@ import {
   MapPin,
   Clock,
   User,
+  RefreshCw,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useRequests } from '@/contexts/RequestsContext';
+import { useWip } from '@/contexts/WipContext';
 import { RequestStatus } from '@/types';
+import { WipServiceDetail } from '@/types/wip';
 
 const STATUS_STEPS: { key: RequestStatus; label: string }[] = [
   { key: 'solicitado', label: 'Solicitud Recibida' },
@@ -35,8 +39,40 @@ const STATUS_ORDER: RequestStatus[] = ['solicitado', 'validando', 'proveedor_asi
 export default function RequestTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { requests, updateStatus } = useRequests();
+  const { requests, updateStatus, updateRequest } = useRequests();
+  const { fetchServiceById, getWipLocalStatus } = useWip();
   const request = requests.find(r => r.id === id);
+
+  const [wipDetail, setWipDetail] = useState<WipServiceDetail | null>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const loadWipStatus = useCallback(async () => {
+    if (!request?.wipServiceId) return;
+    setRefreshing(true);
+    try {
+      console.log('[RequestTracking] Fetching Wip service:', request.wipServiceId);
+      const detail = await fetchServiceById(request.wipServiceId);
+      setWipDetail(detail);
+
+      const localStatus = getWipLocalStatus(detail.status);
+      if (localStatus !== request.status) {
+        console.log('[RequestTracking] Status changed:', request.status, '->', localStatus);
+        void updateRequest(request.id, {
+          status: localStatus,
+          wipStatus: detail.status,
+          providerName: detail.collaborator?.name ?? detail.supplier?.name ?? undefined,
+        });
+      }
+    } catch (error) {
+      console.log('[RequestTracking] Error fetching Wip status:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [request?.wipServiceId, request?.status, request?.id, fetchServiceById, getWipLocalStatus, updateRequest]);
+
+  useEffect(() => {
+    void loadWipStatus();
+  }, [loadWipStatus]);
 
   if (!request) {
     return (
@@ -58,12 +94,12 @@ export default function RequestTrackingScreen() {
 
   const handleCall = () => {
     if (request.providerPhone) {
-      Linking.openURL(`tel:${request.providerPhone}`);
+      void Linking.openURL(`tel:${request.providerPhone}`);
     }
   };
 
   const handleCancel = () => {
-    updateStatus(request.id, 'cancelado');
+    void updateStatus(request.id, 'cancelado');
     router.back();
   };
 
@@ -74,7 +110,21 @@ export default function RequestTrackingScreen() {
           <X color={Colors.textPrimary} size={22} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Seguimiento</Text>
-        <View style={{ width: 40 }} />
+        {request.wipServiceId ? (
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={() => void loadWipStatus()}
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <ActivityIndicator color={Colors.primary} size="small" />
+            ) : (
+              <RefreshCw color={Colors.primary} size={20} />
+            )}
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       <ScrollView
@@ -96,6 +146,21 @@ export default function RequestTrackingScreen() {
             </Text>
           </View>
         </View>
+
+        {request.wipServiceId && (
+          <View style={styles.wipInfoCard}>
+            <Text style={styles.wipInfoLabel}>ID Wip</Text>
+            <Text style={styles.wipInfoValue} numberOfLines={1}>
+              {request.wipExpedient ?? request.wipServiceId}
+            </Text>
+            {request.wipStatus && (
+              <>
+                <Text style={[styles.wipInfoLabel, { marginTop: 8 }]}>Estado Wip</Text>
+                <Text style={styles.wipInfoValue}>{request.wipStatus}</Text>
+              </>
+            )}
+          </View>
+        )}
 
         <View style={styles.timeline}>
           {STATUS_STEPS.map((step, i) => {
@@ -141,7 +206,7 @@ export default function RequestTrackingScreen() {
           })}
         </View>
 
-        {request.providerName && (
+        {(request.providerName || wipDetail?.collaborator?.name || wipDetail?.supplier?.name) && (
           <View style={styles.providerCard}>
             <View style={styles.providerInfo}>
               <View style={styles.providerAvatar}>
@@ -149,7 +214,9 @@ export default function RequestTrackingScreen() {
               </View>
               <View>
                 <Text style={styles.providerLabel}>Proveedor Asignado</Text>
-                <Text style={styles.providerName}>{request.providerName}</Text>
+                <Text style={styles.providerName}>
+                  {request.providerName ?? wipDetail?.collaborator?.name ?? wipDetail?.supplier?.name}
+                </Text>
               </View>
             </View>
             {request.providerPhone && (
@@ -177,6 +244,42 @@ export default function RequestTrackingScreen() {
             <Text style={styles.detailText}>{request.schedule}</Text>
           </View>
         </View>
+
+        {wipDetail && (
+          <View style={styles.detailsCard}>
+            <Text style={styles.detailsTitle}>Información Wip</Text>
+            {wipDetail.fromWhere?.address ? (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Origen:</Text>
+                <Text style={styles.detailText}>
+                  {wipDetail.fromWhere.address}, {wipDetail.fromWhere.city}
+                </Text>
+              </View>
+            ) : null}
+            {wipDetail.whereTo?.address ? (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Destino:</Text>
+                <Text style={styles.detailText}>
+                  {wipDetail.whereTo.address}, {wipDetail.whereTo.city}
+                </Text>
+              </View>
+            ) : null}
+            {wipDetail.provision?.estimated?.time ? (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Tiempo estimado:</Text>
+                <Text style={styles.detailText}>{wipDetail.provision.estimated.time}</Text>
+              </View>
+            ) : null}
+            {wipDetail.totalValue > 0 && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Valor total:</Text>
+                <Text style={styles.detailText}>
+                  $ {wipDetail.totalValue.toLocaleString('es-CO')}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {!isCancelled && request.status !== 'completado' && (
           <TouchableOpacity
@@ -215,6 +318,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  refreshBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700' as const,
@@ -236,7 +347,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   serviceName: {
     fontSize: 18,
@@ -260,6 +371,24 @@ const styles = StyleSheet.create({
   },
   statusCancelledText: {
     color: Colors.danger,
+  },
+  wipInfoCard: {
+    backgroundColor: Colors.lightBlue,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+  },
+  wipInfoLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: Colors.secondary,
+    opacity: 0.7,
+  },
+  wipInfoValue: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.secondary,
+    marginTop: 2,
   },
   timeline: {
     marginBottom: 24,

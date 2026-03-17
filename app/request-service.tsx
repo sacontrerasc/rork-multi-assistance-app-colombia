@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,32 +19,80 @@ import {
   Calendar,
   CheckCircle2,
   ChevronRight,
+  ChevronDown,
   Navigation,
+  Building2,
+  Layers,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { services } from '@/mocks/services';
 import { useRequests } from '@/contexts/RequestsContext';
+import { useWip } from '@/contexts/WipContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { AssistanceRequest } from '@/types';
+import { WipServiceType } from '@/types/wip';
 
-const STEPS = ['Ubicación', 'Descripción', 'Horario', 'Confirmar'];
+const STEPS = ['Servicio Wip', 'Ubicación', 'Descripción', 'Horario', 'Confirmar'];
 
 export default function RequestServiceScreen() {
   const { serviceId, emergency } = useLocalSearchParams<{ serviceId: string; emergency?: string }>();
   const insets = useSafeAreaInsets();
   const { addRequest } = useRequests();
+  const { user } = useAuth();
+  const {
+    businessUnits,
+    isLoadingBusinessUnits,
+    createServiceMutation,
+  } = useWip();
   const service = services.find(s => s.id === serviceId);
 
   const [step, setStep] = useState<number>(0);
+  const [selectedBuId, setSelectedBuId] = useState<string>('');
+  const [selectedServiceType, setSelectedServiceType] = useState<WipServiceType | null>(null);
   const [location, setLocation] = useState<string>('');
+  const [city, setCity] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [schedule, setSchedule] = useState<string>('Lo antes posible');
-  const [loading, setLoading] = useState<boolean>(false);
-
+  const [showBuPicker, setShowBuPicker] = useState<boolean>(false);
+  const [showServiceTypePicker, setShowServiceTypePicker] = useState<boolean>(false);
 
   const isEmergency = emergency === 'true';
 
+  const selectedBu = useMemo(
+    () => businessUnits.find(bu => bu.id === selectedBuId),
+    [businessUnits, selectedBuId]
+  );
+
+  const availableServiceTypes = useMemo(
+    () => selectedBu?.serviceTypes ?? [],
+    [selectedBu]
+  );
+
   const handleUseGPS = () => {
     setLocation('Bogotá, Colombia - Ubicación actual (GPS)');
+    setCity('Bogotá');
+  };
+
+  const getScheduledDate = (): string => {
+    const now = new Date();
+    if (isEmergency || schedule === 'Lo antes posible') {
+      return now.toISOString();
+    }
+    if (schedule === 'Hoy en la mañana') {
+      now.setHours(9, 0, 0, 0);
+      return now.toISOString();
+    }
+    if (schedule === 'Hoy en la tarde') {
+      now.setHours(14, 0, 0, 0);
+      return now.toISOString();
+    }
+    if (schedule === 'Mañana') {
+      now.setDate(now.getDate() + 1);
+      now.setHours(9, 0, 0, 0);
+      return now.toISOString();
+    }
+    now.setDate(now.getDate() + 2);
+    return now.toISOString();
   };
 
   const handleSubmit = async () => {
@@ -52,11 +100,55 @@ export default function RequestServiceScreen() {
       Alert.alert('Error', 'Por favor ingresa tu ubicación');
       return;
     }
-    setLoading(true);
-    try {
+
+    if (selectedServiceType && selectedBu) {
+      console.log('[RequestService] Creating Wip service:', selectedServiceType.name);
+      try {
+        const result = await createServiceMutation.mutateAsync({
+          businessUnitId: selectedBu.id,
+          businessUnitName: selectedBu.name,
+          serviceType: selectedServiceType,
+          userName: user?.name ?? 'Usuario',
+          userPhone: user?.phone ?? '',
+          finalClientName: user?.name ?? 'Usuario',
+          customerDocument: user?.documentNumber?.replace(/\./g, '') ?? '',
+          fromAddress: location,
+          fromCity: city || 'Bogotá',
+          toAddress: location,
+          toCity: city || 'Bogotá',
+          scheduledDate: getScheduledDate(),
+          note: description,
+        });
+
+        console.log('[RequestService] Wip service created:', result?.id);
+
+        const newRequest: AssistanceRequest = {
+          id: 'r_' + Date.now(),
+          userId: user?.id ?? 'u1',
+          serviceId: serviceId ?? '',
+          serviceName: selectedServiceType.name,
+          categoryName: selectedBu.name,
+          status: 'solicitado',
+          location,
+          description,
+          schedule: isEmergency ? 'EMERGENCIA - Inmediato' : schedule,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          wipServiceId: result?.id,
+          wipExpedient: result?.wipExpedient ?? result?.expedient,
+          wipStatus: result?.status ?? 'Pending',
+        };
+        await addRequest(newRequest);
+        setStep(5);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Error desconocido';
+        console.error('[RequestService] Wip create error:', message);
+        Alert.alert('Error', `No se pudo crear el servicio en Wip: ${message}`);
+      }
+    } else {
       const newRequest: AssistanceRequest = {
         id: 'r_' + Date.now(),
-        userId: 'u1',
+        userId: user?.id ?? 'u1',
         serviceId: serviceId ?? '',
         serviceName: service?.name ?? 'Servicio',
         categoryName: service ? service.categoryId : '',
@@ -68,22 +160,21 @@ export default function RequestServiceScreen() {
         updatedAt: new Date().toISOString(),
       };
       await addRequest(newRequest);
-      setStep(4);
-    } catch {
-      Alert.alert('Error', 'No se pudo crear la solicitud');
-    } finally {
-      setLoading(false);
+      setStep(5);
     }
   };
 
   const canAdvance = () => {
-    if (step === 0) return location.trim().length > 0;
-    if (step === 1) return true;
-    if (step === 2) return schedule.trim().length > 0;
+    if (step === 0) return !!selectedBuId && !!selectedServiceType;
+    if (step === 1) return location.trim().length > 0;
+    if (step === 2) return true;
+    if (step === 3) return schedule.trim().length > 0;
     return true;
   };
 
-  if (step === 4) {
+  const isLoading = createServiceMutation.isPending;
+
+  if (step === 5) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.successContainer}>
@@ -92,7 +183,7 @@ export default function RequestServiceScreen() {
           </View>
           <Text style={styles.successTitle}>¡Solicitud Enviada!</Text>
           <Text style={styles.successText}>
-            Tu solicitud ha sido registrada exitosamente. Recibirás una notificación cuando un proveedor sea asignado.
+            Tu solicitud ha sido registrada exitosamente en Wip. Recibirás una notificación cuando un proveedor sea asignado.
           </Text>
           <TouchableOpacity
             style={styles.successBtn}
@@ -130,7 +221,9 @@ export default function RequestServiceScreen() {
           <Text style={styles.headerTitle}>
             {isEmergency ? '🚨 Emergencia' : 'Solicitar Servicio'}
           </Text>
-          <Text style={styles.headerSubtitle}>{service?.name ?? ''}</Text>
+          <Text style={styles.headerSubtitle}>
+            {selectedServiceType?.name ?? service?.name ?? 'Selecciona un servicio'}
+          </Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -165,6 +258,125 @@ export default function RequestServiceScreen() {
       >
         {step === 0 && (
           <View style={styles.stepContent}>
+            <Building2 color={Colors.primary} size={28} />
+            <Text style={styles.stepTitle}>Selecciona el servicio</Text>
+            <Text style={styles.stepDesc}>
+              Escoge la unidad de negocio y tipo de servicio
+            </Text>
+
+            {isLoadingBusinessUnits ? (
+              <View style={styles.loadingWrap}>
+                <ActivityIndicator color={Colors.primary} size="large" />
+                <Text style={styles.loadingText}>Cargando servicios de Wip...</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.fieldLabel}>Unidad de Negocio</Text>
+                <TouchableOpacity
+                  style={styles.pickerBtn}
+                  onPress={() => setShowBuPicker(!showBuPicker)}
+                  activeOpacity={0.7}
+                  testID="bu-picker"
+                >
+                  <Building2 color={Colors.textMuted} size={18} />
+                  <Text style={[
+                    styles.pickerBtnText,
+                    selectedBu && styles.pickerBtnTextSelected,
+                  ]}>
+                    {selectedBu?.name ?? 'Seleccionar unidad de negocio'}
+                  </Text>
+                  <ChevronDown color={Colors.textMuted} size={18} />
+                </TouchableOpacity>
+
+                {showBuPicker && (
+                  <View style={styles.pickerList}>
+                    {businessUnits.map(bu => (
+                      <TouchableOpacity
+                        key={bu.id}
+                        style={[
+                          styles.pickerOption,
+                          selectedBuId === bu.id && styles.pickerOptionActive,
+                        ]}
+                        onPress={() => {
+                          setSelectedBuId(bu.id);
+                          setSelectedServiceType(null);
+                          setShowBuPicker(false);
+                        }}
+                      >
+                        <Text style={[
+                          styles.pickerOptionText,
+                          selectedBuId === bu.id && styles.pickerOptionTextActive,
+                        ]}>
+                          {bu.name}
+                        </Text>
+                        {selectedBuId === bu.id && (
+                          <CheckCircle2 color={Colors.primary} size={18} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                    {businessUnits.length === 0 && (
+                      <Text style={styles.emptyPickerText}>
+                        No hay unidades de negocio disponibles
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {selectedBu && (
+                  <>
+                    <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Tipo de Servicio</Text>
+                    <TouchableOpacity
+                      style={styles.pickerBtn}
+                      onPress={() => setShowServiceTypePicker(!showServiceTypePicker)}
+                      activeOpacity={0.7}
+                      testID="service-type-picker"
+                    >
+                      <Layers color={Colors.textMuted} size={18} />
+                      <Text style={[
+                        styles.pickerBtnText,
+                        selectedServiceType && styles.pickerBtnTextSelected,
+                      ]}>
+                        {selectedServiceType?.name ?? 'Seleccionar tipo de servicio'}
+                      </Text>
+                      <ChevronDown color={Colors.textMuted} size={18} />
+                    </TouchableOpacity>
+
+                    {showServiceTypePicker && (
+                      <View style={styles.pickerList}>
+                        {availableServiceTypes.map(st => (
+                          <TouchableOpacity
+                            key={st.formId}
+                            style={[
+                              styles.pickerOption,
+                              selectedServiceType?.formId === st.formId && styles.pickerOptionActive,
+                            ]}
+                            onPress={() => {
+                              setSelectedServiceType(st);
+                              setShowServiceTypePicker(false);
+                            }}
+                          >
+                            <Text style={[
+                              styles.pickerOptionText,
+                              selectedServiceType?.formId === st.formId && styles.pickerOptionTextActive,
+                            ]}>
+                              {st.name}
+                            </Text>
+                            {selectedServiceType?.formId === st.formId && (
+                              <CheckCircle2 color={Colors.primary} size={18} />
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {step === 1 && (
+          <View style={styles.stepContent}>
             <MapPin color={Colors.primary} size={28} />
             <Text style={styles.stepTitle}>¿Dónde necesitas el servicio?</Text>
             <Text style={styles.stepDesc}>
@@ -187,10 +399,19 @@ export default function RequestServiceScreen() {
               multiline
               testID="request-location"
             />
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Ciudad</Text>
+            <TextInput
+              style={styles.textArea}
+              placeholder="Ej: Bogotá, Medellín"
+              placeholderTextColor={Colors.textMuted}
+              value={city}
+              onChangeText={setCity}
+              testID="request-city"
+            />
           </View>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <View style={styles.stepContent}>
             <FileText color={Colors.primary} size={28} />
             <Text style={styles.stepTitle}>Describe tu situación</Text>
@@ -210,7 +431,7 @@ export default function RequestServiceScreen() {
           </View>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <View style={styles.stepContent}>
             <Calendar color={Colors.primary} size={28} />
             <Text style={styles.stepTitle}>¿Cuándo lo necesitas?</Text>
@@ -234,20 +455,30 @@ export default function RequestServiceScreen() {
           </View>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <View style={styles.stepContent}>
             <CheckCircle2 color={Colors.success} size={28} />
             <Text style={styles.stepTitle}>Confirma tu solicitud</Text>
 
             <View style={styles.summaryCard}>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Servicio</Text>
-                <Text style={styles.summaryValue}>{service?.name}</Text>
+                <Text style={styles.summaryLabel}>Unidad de Negocio</Text>
+                <Text style={styles.summaryValue}>{selectedBu?.name ?? '-'}</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Tipo de Servicio</Text>
+                <Text style={styles.summaryValue}>{selectedServiceType?.name ?? service?.name ?? '-'}</Text>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Ubicación</Text>
                 <Text style={styles.summaryValue} numberOfLines={2}>{location}</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Ciudad</Text>
+                <Text style={styles.summaryValue}>{city || 'No especificada'}</Text>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryRow}>
@@ -261,6 +492,10 @@ export default function RequestServiceScreen() {
                   {isEmergency ? 'EMERGENCIA - Inmediato' : schedule}
                 </Text>
               </View>
+            </View>
+
+            <View style={styles.wipBadge}>
+              <Text style={styles.wipBadgeText}>Se enviará a Wip Tool para gestión</Text>
             </View>
           </View>
         )}
@@ -279,21 +514,21 @@ export default function RequestServiceScreen() {
           <TouchableOpacity
             style={[styles.nextBtn, !canAdvance() && styles.nextBtnDisabled, step === 0 && { flex: 1 }]}
             activeOpacity={0.8}
-            disabled={!canAdvance() || loading}
-            onPress={step === 3 ? handleSubmit : () => setStep(step + 1)}
+            disabled={!canAdvance() || isLoading}
+            onPress={step === 4 ? handleSubmit : () => setStep(step + 1)}
           >
             <LinearGradient
               colors={canAdvance() ? [Colors.primary, Colors.primaryDark] : ['#ccc', '#bbb']}
               style={styles.nextBtnGradient}
             >
-              {loading ? (
+              {isLoading ? (
                 <ActivityIndicator color={Colors.white} />
               ) : (
                 <>
                   <Text style={styles.nextBtnText}>
-                    {step === 3 ? 'Enviar Solicitud' : 'Siguiente'}
+                    {step === 4 ? 'Enviar a Wip' : 'Siguiente'}
                   </Text>
-                  {step < 3 && <ChevronRight color={Colors.white} size={18} />}
+                  {step < 4 && <ChevronRight color={Colors.white} size={18} />}
                 </>
               )}
             </LinearGradient>
@@ -342,18 +577,19 @@ const styles = StyleSheet.create({
   stepsBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     backgroundColor: Colors.background,
   },
   stepItem: {
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
+    flex: 1,
   },
   stepDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
@@ -365,7 +601,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.success,
   },
   stepNum: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700' as const,
     color: Colors.textMuted,
   },
@@ -373,9 +609,10 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   stepLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: Colors.textMuted,
     fontWeight: '500' as const,
+    textAlign: 'center' as const,
   },
   stepLabelActive: {
     color: Colors.primary,
@@ -396,13 +633,84 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginTop: 12,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   stepDesc: {
     fontSize: 14,
     color: Colors.textSecondary,
-    textAlign: 'center',
+    textAlign: 'center' as const,
     marginBottom: 24,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
+    alignSelf: 'flex-start' as const,
+    marginBottom: 8,
+  },
+  loadingWrap: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  pickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    backgroundColor: Colors.background,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 10,
+  },
+  pickerBtnText: {
+    flex: 1,
+    fontSize: 15,
+    color: Colors.textMuted,
+  },
+  pickerBtnTextSelected: {
+    color: Colors.textPrimary,
+    fontWeight: '600' as const,
+  },
+  pickerList: {
+    alignSelf: 'stretch',
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  pickerOptionActive: {
+    backgroundColor: Colors.primary + '08',
+  },
+  pickerOptionText: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+    flex: 1,
+  },
+  pickerOptionTextActive: {
+    fontWeight: '700' as const,
+    color: Colors.primary,
+  },
+  emptyPickerText: {
+    padding: 16,
+    fontSize: 14,
+    color: Colors.textMuted,
+    textAlign: 'center' as const,
   },
   gpsBtn: {
     flexDirection: 'row',
@@ -480,6 +788,20 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.border,
   },
+  wipBadge: {
+    marginTop: 16,
+    backgroundColor: Colors.lightBlue,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
+  wipBadgeText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.secondary,
+  },
   bottomBar: {
     paddingHorizontal: 20,
     paddingTop: 12,
@@ -543,7 +865,7 @@ const styles = StyleSheet.create({
   successText: {
     fontSize: 14,
     color: Colors.textSecondary,
-    textAlign: 'center',
+    textAlign: 'center' as const,
     lineHeight: 22,
     marginBottom: 32,
   },

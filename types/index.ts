@@ -61,6 +61,9 @@ export interface AssistanceRequest {
   estimatedArrival?: string;
   createdAt: string;
   updatedAt: string;
+  wipServiceId?: string;
+  wipExpedient?: string;
+  wipStatus?: string;
 }
 
 export interface Beneficiary {

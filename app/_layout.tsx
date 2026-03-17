@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { RequestsProvider } from "@/contexts/RequestsContext";
+import { WipProvider } from "@/contexts/WipContext";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -50,9 +51,11 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AuthProvider>
-          <RequestsProvider>
-            <RootLayoutNav />
-          </RequestsProvider>
+          <WipProvider>
+            <RequestsProvider>
+              <RootLayoutNav />
+            </RequestsProvider>
+          </WipProvider>
         </AuthProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
