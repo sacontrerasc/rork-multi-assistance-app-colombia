@@ -35,6 +35,7 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { plans } from '@/mocks/plans';
+import { useAuth } from '@/contexts/AuthContext';
 
 const COLOMBIAN_CITIES = [
   'Bogotá D.C.', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena',
@@ -59,6 +60,7 @@ export default function PlanDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const plan = plans.find(p => p.id === id);
+  const { isAuthenticated } = useAuth();
 
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [showCityModal, setShowCityModal] = useState<boolean>(false);
@@ -239,13 +241,22 @@ export default function PlanDetailScreen() {
             style={styles.buyNowBtn}
             activeOpacity={0.7}
             testID="buy-now-btn"
+            onPress={() => {
+              if (isAuthenticated) {
+                console.log('Comprar plan:', plan?.id);
+              } else {
+                router.push('/(auth)/login');
+              }
+            }}
           >
             <LinearGradient
               colors={[Colors.primary, Colors.primaryDark]}
               style={styles.buyNowGradient}
             >
               <Zap color={Colors.white} size={18} />
-              <Text style={styles.buyNowText}>Comprar ahora</Text>
+              <Text style={styles.buyNowText}>
+                {isAuthenticated ? 'Comprar ahora' : 'Iniciar sesión para comprar'}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
 

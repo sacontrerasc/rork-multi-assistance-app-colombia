@@ -24,6 +24,7 @@ import {
 import Colors from '@/constants/colors';
 import { services } from '@/mocks/services';
 import { categories } from '@/mocks/categories';
+import { useAuth } from '@/contexts/AuthContext';
 
 const typeIcons: Record<string, React.ComponentType<{ color: string; size: number }>> = {
   virtual: Video,
@@ -42,6 +43,7 @@ export default function ServiceDetailScreen() {
   const insets = useSafeAreaInsets();
   const service = services.find(s => s.id === id);
   const category = service ? categories.find(c => c.id === service.categoryId) : null;
+  const { isAuthenticated } = useAuth();
 
   if (!service) {
     return (
@@ -160,7 +162,13 @@ export default function ServiceDetailScreen() {
           <TouchableOpacity
             style={styles.buyBtn}
             activeOpacity={0.8}
-            onPress={() => router.push(`/request-service?serviceId=${service.id}`)}
+            onPress={() => {
+              if (isAuthenticated) {
+                router.push(`/request-service?serviceId=${service.id}`);
+              } else {
+                router.push('/(auth)/login');
+              }
+            }}
             testID="buy-now-btn"
           >
             <LinearGradient
@@ -170,7 +178,9 @@ export default function ServiceDetailScreen() {
               style={styles.buyBtnGradient}
             >
               <CreditCard color={Colors.white} size={18} />
-              <Text style={styles.buyBtnText}>Comprar Ahora</Text>
+              <Text style={styles.buyBtnText}>
+                {isAuthenticated ? 'Comprar Ahora' : 'Iniciar sesión'}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
