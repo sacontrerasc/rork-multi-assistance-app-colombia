@@ -24,6 +24,9 @@ import {
   HelpCircle,
   Settings,
   CreditCard,
+  LogIn,
+  ClipboardList,
+  HeartPulse,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +35,7 @@ import { useRequests } from '@/contexts/RequestsContext';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { requests } = useRequests();
 
   const handleLogout = () => {
@@ -54,6 +57,85 @@ export default function ProfileScreen() {
   };
 
   const completedCount = requests.filter(r => r.status === 'completado').length;
+
+  if (!isAuthenticated) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <LinearGradient
+          colors={[Colors.primary, Colors.primaryDark]}
+          style={[styles.headerGradient, { paddingTop: insets.top + 40, paddingBottom: 60 }]}
+        >
+          <View style={styles.guestHeaderContent}>
+            <View style={styles.guestAvatar}>
+              <User color={Colors.primary} size={40} />
+            </View>
+            <Text style={styles.guestTitle}>Bienvenido a CL Asistencia</Text>
+            <Text style={styles.guestSubtitle}>
+              Inicia sesión para acceder a tu perfil, ver tus solicitudes y gestionar tus servicios
+            </Text>
+          </View>
+        </LinearGradient>
+
+        <View style={styles.guestContent}>
+          <View style={styles.guestCard}>
+            <Text style={styles.guestCardTitle}>¿Por qué crear una cuenta?</Text>
+            
+            <View style={styles.guestBenefit}>
+              <View style={styles.guestBenefitIcon}>
+                <ClipboardList color={Colors.primary} size={20} />
+              </View>
+              <View style={styles.guestBenefitText}>
+                <Text style={styles.guestBenefitTitle}>Gestiona tus solicitudes</Text>
+                <Text style={styles.guestBenefitDesc}>Realiza seguimiento de todos tus servicios en tiempo real</Text>
+              </View>
+            </View>
+
+            <View style={styles.guestBenefit}>
+              <View style={styles.guestBenefitIcon}>
+                <Shield color={Colors.primary} size={20} />
+              </View>
+              <View style={styles.guestBenefitText}>
+                <Text style={styles.guestBenefitTitle}>Accede a tu plan</Text>
+                <Text style={styles.guestBenefitDesc}>Consulta beneficios, cobertura y vigencia de tu suscripción</Text>
+              </View>
+            </View>
+
+            <View style={styles.guestBenefit}>
+              <View style={styles.guestBenefitIcon}>
+                <HeartPulse color={Colors.primary} size={20} />
+              </View>
+              <View style={styles.guestBenefitText}>
+                <Text style={styles.guestBenefitTitle}>Solicita servicios</Text>
+                <Text style={styles.guestBenefitDesc}>Contrata asistencias de emergencia con un solo toque</Text>
+              </View>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.loginBtn}
+            onPress={() => router.push('/(auth)/login')}
+            activeOpacity={0.7}
+          >
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryDark]}
+              style={styles.loginBtnGradient}
+            >
+              <LogIn color={Colors.white} size={20} />
+              <Text style={styles.loginBtnText}>Iniciar Sesión</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.registerBtn}
+            onPress={() => router.push('/(auth)/register')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.registerBtnText}>Crear Cuenta Nueva</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -494,5 +576,117 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
     marginBottom: 8,
+  },
+
+  guestHeaderContent: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  guestAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  guestTitle: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+    color: Colors.white,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  guestSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  guestContent: {
+    flex: 1,
+    padding: 20,
+    marginTop: -20,
+  },
+  guestCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  guestCardTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    marginBottom: 20,
+  },
+  guestBenefit: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    marginBottom: 18,
+  },
+  guestBenefitIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.lightBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestBenefitText: {
+    flex: 1,
+  },
+  guestBenefitTitle: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  guestBenefitDesc: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  loginBtn: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  loginBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+  },
+  loginBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.white,
+  },
+  registerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.white,
+  },
+  registerBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.primary,
   },
 });

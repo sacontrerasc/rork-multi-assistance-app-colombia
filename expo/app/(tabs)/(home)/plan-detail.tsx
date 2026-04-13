@@ -35,6 +35,7 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { plans } from '@/mocks/plans';
+import { useAuth } from '@/contexts/AuthContext';
 
 const COLOMBIAN_CITIES = [
   'Bogotá D.C.', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena',
@@ -58,6 +59,7 @@ type BillingType = 'mensual' | 'anual';
 export default function PlanDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
   const plan = plans.find(p => p.id === id);
 
   const [selectedCity, setSelectedCity] = useState<string>('');
@@ -239,13 +241,22 @@ export default function PlanDetailScreen() {
             style={styles.buyNowBtn}
             activeOpacity={0.7}
             testID="buy-now-btn"
+            onPress={() => {
+              if (!isAuthenticated) {
+                router.push('/(auth)/login');
+              } else {
+                console.log('Procesar compra...');
+              }
+            }}
           >
             <LinearGradient
               colors={[Colors.primary, Colors.primaryDark]}
               style={styles.buyNowGradient}
             >
               <Zap color={Colors.white} size={18} />
-              <Text style={styles.buyNowText}>Comprar ahora</Text>
+              <Text style={styles.buyNowText}>
+                {isAuthenticated ? 'Comprar ahora' : 'Iniciar sesión para comprar'}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -253,9 +264,18 @@ export default function PlanDetailScreen() {
             style={styles.addToCartBtn}
             activeOpacity={0.7}
             testID="add-to-cart-btn"
+            onPress={() => {
+              if (!isAuthenticated) {
+                router.push('/(auth)/login');
+              } else {
+                console.log('Añadir al carrito...');
+              }
+            }}
           >
             <ShoppingCart color={Colors.primary} size={18} />
-            <Text style={styles.addToCartText}>Añadir al carrito</Text>
+            <Text style={styles.addToCartText}>
+              {isAuthenticated ? 'Añadir al carrito' : 'Iniciar sesión'}
+            </Text>
           </TouchableOpacity>
         </View>
 

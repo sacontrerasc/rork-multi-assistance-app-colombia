@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   ClipboardList,
   ChevronRight,
@@ -17,9 +18,12 @@ import {
   Truck,
   Search,
   AlertCircle,
+  LogIn,
+  Lock,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useRequests } from '@/contexts/RequestsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { RequestStatus } from '@/types';
 
 const statusConfig: Record<RequestStatus, { label: string; color: string; icon: React.ComponentType<{ color: string; size: number }> }> = {
@@ -35,6 +39,7 @@ type TabKey = 'active' | 'completed';
 
 export default function RequestsScreen() {
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
   const { activeRequests, completedRequests } = useRequests();
   const [tab, setTab] = useState<TabKey>('active');
 
@@ -50,6 +55,70 @@ export default function RequestsScreen() {
       minute: '2-digit',
     });
   };
+
+  if (!isAuthenticated) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <Text style={styles.headerTitle}>Mis Solicitudes</Text>
+          <Text style={styles.headerSubtitle}>Gestiona tus servicios</Text>
+        </View>
+
+        <View style={styles.guestContent}>
+          <View style={styles.guestIconContainer}>
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryDark]}
+              style={styles.guestIconGradient}
+            >
+              <Lock color={Colors.white} size={40} />
+            </LinearGradient>
+          </View>
+
+          <Text style={styles.guestTitle}>Acceso Restringido</Text>
+          <Text style={styles.guestText}>
+            Para ver y gestionar tus solicitudes de servicio, necesitas iniciar sesión en tu cuenta.
+          </Text>
+
+          <View style={styles.guestFeatures}>
+            <View style={styles.guestFeature}>
+              <Clock color={Colors.primary} size={18} />
+              <Text style={styles.guestFeatureText}>Seguimiento en tiempo real</Text>
+            </View>
+            <View style={styles.guestFeature}>
+              <CheckCircle2 color={Colors.primary} size={18} />
+              <Text style={styles.guestFeatureText}>Historial de servicios</Text>
+            </View>
+            <View style={styles.guestFeature}>
+              <AlertCircle color={Colors.primary} size={18} />
+              <Text style={styles.guestFeatureText}>Notificaciones de estado</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.loginBtn}
+            onPress={() => router.push('/(auth)/login')}
+            activeOpacity={0.7}
+          >
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryDark]}
+              style={styles.loginBtnGradient}
+            >
+              <LogIn color={Colors.white} size={20} />
+              <Text style={styles.loginBtnText}>Iniciar Sesión</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.registerBtn}
+            onPress={() => router.push('/(auth)/register')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.registerBtnText}>Crear Cuenta Nueva</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -290,5 +359,90 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+  },
+
+  guestContent: {
+    flex: 1,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestIconContainer: {
+    marginBottom: 24,
+  },
+  guestIconGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestTitle: {
+    fontSize: 22,
+    fontWeight: '800' as const,
+    color: Colors.textPrimary,
+    marginBottom: 12,
+  },
+  guestText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  guestFeatures: {
+    width: '100%',
+    gap: 14,
+    marginBottom: 32,
+  },
+  guestFeature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.white,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  guestFeatureText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.textPrimary,
+  },
+  loginBtn: {
+    width: '100%',
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  loginBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+  },
+  loginBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.white,
+  },
+  registerBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.white,
+  },
+  registerBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.primary,
   },
 });
