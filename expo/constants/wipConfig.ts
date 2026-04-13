@@ -1,11 +1,11 @@
-export const WIP_BASE_URL = 'https://api.wiptool.com';
-export const WIP_API_KEY = 'xWjGb5Zt84g4YEBEe4C8ZxNWkVswJg7ZRbkLwJeQ';
+export const WIP_BASE_URL = 'https://qa.wiptool.com';
+export const WIP_API_KEY = 'x1uTTQSjgy3St7ncMFN4dqp7fHE2dGg5UENHEXfR';
 
 export const WIP_IDS = {
-  userId: '67a0dcadba440e5f0db90ccc',
-  buOwnerId: '67379dff213b73f99523f061',
-  ownerId: '67379dff213b73f99523f061',
-  companyId: '67379dff213b73f99523f061',
-  ownerName: 'MULTISERVICIOS CL TIENE',
-  buOwnerName: 'MULTISERVICIOS CL TIENE',
+  userId: '69a74c1f2624f11af97b6283',
+  buOwnerId: '672e63786550243020775186',
+  ownerId: '672e63786550243020775186',
+  companyId: '672e63786550243020775186',
+  ownerName: 'CL tiene',
+  buOwnerName: 'CL tiene',
 };
