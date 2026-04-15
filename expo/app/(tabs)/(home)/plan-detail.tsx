@@ -245,7 +245,10 @@ export default function PlanDetailScreen() {
               if (isAuthenticated) {
                 console.log('Comprar plan:', plan?.id);
               } else {
-                router.push('/(auth)/login');
+                router.push({
+                  pathname: '/(auth)/login',
+                  params: { redirect: `/plan-detail?id=${plan?.id}` }
+                });
               }
             }}
           >
@@ -264,6 +267,16 @@ export default function PlanDetailScreen() {
             style={styles.addToCartBtn}
             activeOpacity={0.7}
             testID="add-to-cart-btn"
+            onPress={() => {
+              if (isAuthenticated) {
+                console.log('Añadir al carrito:', plan?.id);
+              } else {
+                router.push({
+                  pathname: '/(auth)/login',
+                  params: { redirect: `/plan-detail?id=${plan?.id}` }
+                });
+              }
+            }}
           >
             <ShoppingCart color={Colors.primary} size={18} />
             <Text style={styles.addToCartText}>Añadir al carrito</Text>

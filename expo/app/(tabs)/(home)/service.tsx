@@ -153,7 +153,16 @@ export default function ServiceDetailScreen() {
           <TouchableOpacity
             style={styles.cartBtn}
             activeOpacity={0.7}
-            onPress={() => console.log('Add to cart:', service.id)}
+            onPress={() => {
+              if (isAuthenticated) {
+                console.log('Add to cart:', service.id);
+              } else {
+                router.push({
+                  pathname: '/(auth)/login',
+                  params: { redirect: `/service?id=${service.id}` }
+                });
+              }
+            }}
             testID="add-to-cart-btn"
           >
             <ShoppingCart color={Colors.primary} size={18} />
@@ -166,7 +175,10 @@ export default function ServiceDetailScreen() {
               if (isAuthenticated) {
                 router.push(`/request-service?serviceId=${service.id}`);
               } else {
-                router.push('/(auth)/login');
+                router.push({
+                  pathname: '/(auth)/login',
+                  params: { redirect: `/service?id=${service.id}` }
+                });
               }
             }}
             testID="buy-now-btn"

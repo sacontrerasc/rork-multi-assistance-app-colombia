@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -50,7 +51,11 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email, password);
-      router.replace('/(tabs)/(home)');
+      if (redirect) {
+        router.replace(redirect as string);
+      } else {
+        router.replace('/(tabs)/(home)');
+      }
     } catch {
       Alert.alert('Error', 'Credenciales incorrectas');
     } finally {
