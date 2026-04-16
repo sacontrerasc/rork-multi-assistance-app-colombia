@@ -154,6 +154,10 @@ export default function HomeScreen() {
   };
 
   const handleSOS = () => {
+    if (!isAuthenticated) {
+      router.push({ pathname: '/(auth)/login', params: { redirect: '/request-service?serviceId=s4&emergency=true' } });
+      return;
+    }
     router.push('/request-service?serviceId=s4&emergency=true');
   };
 

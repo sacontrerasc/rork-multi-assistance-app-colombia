@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -38,13 +38,23 @@ export default function RequestServiceScreen() {
   const { serviceId, emergency } = useLocalSearchParams<{ serviceId: string; emergency?: string }>();
   const insets = useSafeAreaInsets();
   const { addRequest } = useRequests();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const {
     businessUnits,
     isLoadingBusinessUnits,
     createServiceMutation,
   } = useWip();
   const service = services.find(s => s.id === serviceId);
+
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('[RequestService] User not authenticated, redirecting to login');
+      router.replace({
+        pathname: '/(auth)/login',
+        params: { redirect: `/request-service?serviceId=${serviceId ?? ''}${emergency ? '&emergency=true' : ''}` },
+      });
+    }
+  }, [isAuthenticated, serviceId, emergency]);
 
   const [step, setStep] = useState<number>(0);
   const [selectedBuId, setSelectedBuId] = useState<string>('');
