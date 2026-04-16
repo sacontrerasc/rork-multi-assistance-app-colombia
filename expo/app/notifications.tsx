@@ -12,29 +12,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Bell,
   BellOff,
-  Car,
-  Home,
-  Heart,
-  Crown,
-  Shield,
-  Sparkles,
-  Star,
   ChevronLeft,
   CheckCheck,
   Trash2,
+  ClipboardList,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { sampleNotifications, Notification } from '@/mocks/notifications';
+import { useRequests } from '@/contexts/RequestsContext';
 
-const iconMap: Record<string, React.ComponentType<{ color: string; size: number }>> = {
-  Car,
-  Home,
-  Heart,
-  Crown,
-  Shield,
-  Sparkles,
-  Star,
-};
+interface AppNotification {
+  id: string;
+  type: 'service' | 'promo' | 'system' | 'request';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  color: string;
+}
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -50,11 +44,11 @@ function timeAgo(dateStr: string): string {
   return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }
 
-function groupNotifications(notifications: Notification[]): { title: string; data: Notification[] }[] {
+function groupNotifications(notifications: AppNotification[]): { title: string; data: AppNotification[] }[] {
   const now = new Date();
-  const today: Notification[] = [];
-  const yesterday: Notification[] = [];
-  const earlier: Notification[] = [];
+  const today: AppNotification[] = [];
+  const yesterday: AppNotification[] = [];
+  const earlier: AppNotification[] = [];
 
   notifications.forEach(n => {
     const date = new Date(n.createdAt);
@@ -68,7 +62,7 @@ function groupNotifications(notifications: Notification[]): { title: string; dat
     }
   });
 
-  const groups: { title: string; data: Notification[] }[] = [];
+  const groups: { title: string; data: AppNotification[] }[] = [];
   if (today.length > 0) groups.push({ title: 'Hoy', data: today });
   if (yesterday.length > 0) groups.push({ title: 'Ayer', data: yesterday });
   if (earlier.length > 0) groups.push({ title: 'Anteriores', data: earlier });
@@ -77,8 +71,24 @@ function groupNotifications(notifications: Notification[]): { title: string; dat
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
-  const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
+  const { activeRequests } = useRequests();
+
+  const requestNotifications: AppNotification[] = activeRequests.map(req => ({
+    id: `notif_${req.id}`,
+    type: 'request' as const,
+    title: req.serviceName,
+    message: `Estado: ${req.status === 'en_camino' ? 'En camino' : req.status === 'proveedor_asignado' ? 'Proveedor asignado' : req.status === 'validando' ? 'Validando' : 'Solicitado'}${req.providerName ? ` - ${req.providerName}` : ''}`,
+    read: false,
+    createdAt: req.updatedAt,
+    color: '#3B82F6',
+  }));
+
+  const [notifications, setNotifications] = useState<AppNotification[]>(requestNotifications);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    setNotifications(requestNotifications);
+  }, [activeRequests.length]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const groups = groupNotifications(notifications);
@@ -105,8 +115,7 @@ export default function NotificationsScreen() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   }, []);
 
-  const renderNotification = (notification: Notification, index: number) => {
-    const IconComponent = iconMap[notification.icon] ?? Bell;
+  const renderNotification = (notification: AppNotification) => {
     const typeLabel =
       notification.type === 'service' ? 'Servicio' :
       notification.type === 'promo' ? 'Promoción' :
@@ -128,7 +137,7 @@ export default function NotificationsScreen() {
           testID={`notification-${notification.id}`}
         >
           <View style={[styles.iconCircle, { backgroundColor: notification.color + '18' }]}>
-            <IconComponent color={notification.color} size={20} />
+            <ClipboardList color={notification.color} size={20} />
             {!notification.read && <View style={styles.unreadDot} />}
           </View>
           <View style={styles.notificationContent}>
@@ -202,7 +211,7 @@ export default function NotificationsScreen() {
           </View>
           <Text style={styles.emptyTitle}>Sin notificaciones</Text>
           <Text style={styles.emptyText}>
-            Cuando tengas actualizaciones sobre tus servicios o promociones, aparecerán aquí.
+            Cuando tengas actualizaciones sobre tus servicios, aparecerán aquí.
           </Text>
         </View>
       ) : (
@@ -223,7 +232,7 @@ export default function NotificationsScreen() {
           {groups.map((group) => (
             <View key={group.title} style={styles.group}>
               <Text style={styles.groupTitle}>{group.title}</Text>
-              {group.data.map((n, i) => renderNotification(n, i))}
+              {group.data.map((n) => renderNotification(n))}
             </View>
           ))}
 

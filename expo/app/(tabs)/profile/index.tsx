@@ -28,7 +28,6 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
-import { demoPlan, demoBeneficiaries } from '@/mocks/user';
 import { useRequests } from '@/contexts/RequestsContext';
 
 export default function ProfileScreen() {
@@ -139,7 +138,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{demoBeneficiaries.length}</Text>
+            <Text style={styles.statValue}>0</Text>
             <Text style={styles.statLabel}>Beneficiarios</Text>
           </View>
         </View>
@@ -155,47 +154,16 @@ export default function ProfileScreen() {
               <Shield color={Colors.primary} size={22} />
             </View>
             <View style={styles.planHeaderInfo}>
-              <Text style={styles.planName}>{demoPlan.name}</Text>
-              <Text style={styles.planType}>
-                {demoPlan.type === 'familiar' ? 'Plan Familiar' : demoPlan.type}
-              </Text>
+              <Text style={styles.planName}>Mi Plan</Text>
+              <Text style={styles.planType}>Consulta tu suscripción</Text>
             </View>
-            <View style={styles.planActive}>
-              <Text style={styles.planActiveText}>Activo</Text>
-            </View>
-          </View>
-
-          <Text style={styles.planPrice}>
-            ${demoPlan.price.toLocaleString('es-CO')} <Text style={styles.planCurrency}>COP/mes</Text>
-          </Text>
-
-          <View style={styles.benefitsGrid}>
-            {demoPlan.benefits.slice(0, 4).map((benefit, i) => (
-              <View key={i} style={styles.benefitItem}>
-                <View style={styles.benefitDot} />
-                <Text style={styles.benefitText}>{benefit}</Text>
-              </View>
-            ))}
           </View>
 
           <TouchableOpacity style={styles.viewAllBtn}>
-            <Text style={styles.viewAllText}>Ver todos los beneficios</Text>
+            <Text style={styles.viewAllText}>Ver planes disponibles</Text>
             <ChevronRight color={Colors.secondary} size={16} />
           </TouchableOpacity>
         </View>
-
-        <Text style={styles.sectionTitle}>Beneficiarios</Text>
-        {demoBeneficiaries.map(b => (
-          <View key={b.id} style={styles.beneficiaryCard}>
-            <View style={styles.beneficiaryAvatar}>
-              <Users color={Colors.primary} size={16} />
-            </View>
-            <View style={styles.beneficiaryInfo}>
-              <Text style={styles.beneficiaryName}>{b.name}</Text>
-              <Text style={styles.beneficiaryRel}>{b.relationship}</Text>
-            </View>
-          </View>
-        ))}
 
         <Text style={styles.sectionTitle}>Información Personal</Text>
         <View style={styles.infoCard}>
@@ -611,7 +579,7 @@ const styles = StyleSheet.create({
     color: Colors.danger,
   },
   version: {
-    textAlign: 'center',
+    textAlign: 'center' as const,
     fontSize: 12,
     color: Colors.textMuted,
     marginBottom: 8,

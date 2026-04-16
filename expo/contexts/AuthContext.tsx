@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { User } from '@/types';
-import { demoUser } from '@/mocks/user';
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
   const [user, setUser] = useState<User | null>(null);
@@ -17,8 +16,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           setUser(JSON.parse(stored));
           setIsAuthenticated(true);
         }
-      } catch (e) {
-        console.log('Auth check error:', e);
+      } catch (_e) {
+        // Auth check failed
       } finally {
         setIsLoading(false);
       }
@@ -27,21 +26,44 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   }, []);
 
   const login = async (email: string, _password: string) => {
-    console.log('Login attempt:', email);
-    await AsyncStorage.setItem('auth_user', JSON.stringify(demoUser));
-    setUser(demoUser);
+    const storedUser = await AsyncStorage.getItem('auth_user_profile');
+    let loggedInUser: User;
+
+    if (storedUser) {
+      loggedInUser = JSON.parse(storedUser);
+    } else {
+      loggedInUser = {
+        id: 'u_' + Date.now(),
+        name: email.split('@')[0] ?? 'Usuario',
+        email,
+        phone: '',
+        documentType: 'CC',
+        documentNumber: '',
+        role: 'user',
+        planId: '',
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    await AsyncStorage.setItem('auth_user', JSON.stringify(loggedInUser));
+    setUser(loggedInUser);
     setIsAuthenticated(true);
   };
 
   const register = async (name: string, email: string, _password: string) => {
-    console.log('Register attempt:', name, email);
     const newUser: User = {
-      ...demoUser,
+      id: 'u_' + Date.now(),
       name,
       email,
-      id: 'u_' + Date.now(),
+      phone: '',
+      documentType: 'CC',
+      documentNumber: '',
+      role: 'user',
+      planId: '',
+      createdAt: new Date().toISOString(),
     };
     await AsyncStorage.setItem('auth_user', JSON.stringify(newUser));
+    await AsyncStorage.setItem('auth_user_profile', JSON.stringify(newUser));
     setUser(newUser);
     setIsAuthenticated(true);
   };

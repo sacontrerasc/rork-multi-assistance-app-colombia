@@ -37,9 +37,9 @@ import {
   User,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { categories } from '@/mocks/categories';
-import { plans } from '@/mocks/plans';
-import { services, suggestedServiceIds } from '@/mocks/services';
+import { categories } from '@/constants/categories';
+import { plans } from '@/constants/plans';
+import { services, suggestedServiceIds } from '@/constants/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequests } from '@/contexts/RequestsContext';
 import { Service } from '@/types';

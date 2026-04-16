@@ -25,7 +25,7 @@ import {
   Layers,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { services } from '@/mocks/services';
+import { services } from '@/constants/services';
 import { useRequests } from '@/contexts/RequestsContext';
 import { useWip } from '@/contexts/WipContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,7 +48,6 @@ export default function RequestServiceScreen() {
 
   React.useEffect(() => {
     if (!isAuthenticated) {
-      console.log('[RequestService] User not authenticated, redirecting to login');
       router.replace({
         pathname: '/(auth)/login',
         params: { redirect: `/request-service?serviceId=${serviceId ?? ''}${emergency ? '&emergency=true' : ''}` },
@@ -112,7 +111,6 @@ export default function RequestServiceScreen() {
     }
 
     if (selectedServiceType && selectedBu) {
-      console.log('[RequestService] Creating Wip service:', selectedServiceType.name);
       try {
         const result = await createServiceMutation.mutateAsync({
           businessUnitId: selectedBu.id,
@@ -129,8 +127,6 @@ export default function RequestServiceScreen() {
           scheduledDate: getScheduledDate(),
           note: description,
         });
-
-        console.log('[RequestService] Wip service created:', result?.id);
 
         const newRequest: AssistanceRequest = {
           id: 'r_' + Date.now(),
@@ -152,8 +148,7 @@ export default function RequestServiceScreen() {
         setStep(5);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Error desconocido';
-        console.error('[RequestService] Wip create error:', message);
-        Alert.alert('Error', `No se pudo crear el servicio en Wip: ${message}`);
+        Alert.alert('Error', `No se pudo crear el servicio: ${message}`);
       }
     } else {
       const newRequest: AssistanceRequest = {

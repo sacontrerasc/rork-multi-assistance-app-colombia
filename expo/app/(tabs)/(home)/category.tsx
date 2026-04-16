@@ -11,8 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { ArrowLeft, Clock, Video, Phone, MapPin, Wifi } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { categories } from '@/mocks/categories';
-import { services } from '@/mocks/services';
+import { categories } from '@/constants/categories';
+import { services } from '@/constants/services';
 
 const typeIconMap: Record<string, React.ComponentType<{ color: string; size: number }>> = {
   virtual: Video,

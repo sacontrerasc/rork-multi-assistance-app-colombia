@@ -22,8 +22,8 @@ import {
   CreditCard,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { services } from '@/mocks/services';
-import { categories } from '@/mocks/categories';
+import { services } from '@/constants/services';
+import { categories } from '@/constants/categories';
 import { useAuth } from '@/contexts/AuthContext';
 
 const typeIcons: Record<string, React.ComponentType<{ color: string; size: number }>> = {

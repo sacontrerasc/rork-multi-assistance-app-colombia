@@ -50,21 +50,19 @@ export default function RequestTrackingScreen() {
     if (!request?.wipServiceId) return;
     setRefreshing(true);
     try {
-      console.log('[RequestTracking] Fetching Wip service:', request.wipServiceId);
       const detail = await fetchServiceById(request.wipServiceId);
       setWipDetail(detail);
 
       const localStatus = getWipLocalStatus(detail.status);
       if (localStatus !== request.status) {
-        console.log('[RequestTracking] Status changed:', request.status, '->', localStatus);
         void updateRequest(request.id, {
           status: localStatus,
           wipStatus: detail.status,
           providerName: detail.collaborator?.name ?? detail.supplier?.name ?? undefined,
         });
       }
-    } catch (error) {
-      console.log('[RequestTracking] Error fetching Wip status:', error);
+    } catch (_error) {
+      // Status fetch failed
     } finally {
       setRefreshing(false);
     }

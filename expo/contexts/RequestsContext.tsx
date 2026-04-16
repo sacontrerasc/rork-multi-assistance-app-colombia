@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { AssistanceRequest } from '@/types';
-import { sampleRequests } from '@/mocks/requests';
 
 export const [RequestsProvider, useRequests] = createContextHook(() => {
   const [requests, setRequests] = useState<AssistanceRequest[]>([]);
@@ -13,13 +12,9 @@ export const [RequestsProvider, useRequests] = createContextHook(() => {
         const stored = await AsyncStorage.getItem('assistance_requests');
         if (stored) {
           setRequests(JSON.parse(stored));
-        } else {
-          setRequests(sampleRequests);
-          void AsyncStorage.setItem('assistance_requests', JSON.stringify(sampleRequests));
         }
-      } catch (e) {
-        console.log('[RequestsContext] Load error:', e);
-        setRequests(sampleRequests);
+      } catch (_e) {
+        // Load error
       }
     };
     void load();
@@ -28,9 +23,7 @@ export const [RequestsProvider, useRequests] = createContextHook(() => {
   const addRequest = useCallback(async (request: AssistanceRequest) => {
     setRequests(prev => {
       const updated = [request, ...prev];
-      AsyncStorage.setItem('assistance_requests', JSON.stringify(updated)).catch(e =>
-        console.log('[RequestsContext] Save error:', e)
-      );
+      AsyncStorage.setItem('assistance_requests', JSON.stringify(updated)).catch(() => {});
       return updated;
     });
   }, []);
@@ -40,9 +33,7 @@ export const [RequestsProvider, useRequests] = createContextHook(() => {
       const updated = prev.map(r =>
         r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r
       );
-      AsyncStorage.setItem('assistance_requests', JSON.stringify(updated)).catch(e =>
-        console.log('[RequestsContext] Save error:', e)
-      );
+      AsyncStorage.setItem('assistance_requests', JSON.stringify(updated)).catch(() => {});
       return updated;
     });
   }, []);
@@ -52,9 +43,7 @@ export const [RequestsProvider, useRequests] = createContextHook(() => {
       const updated = prev.map(r =>
         r.id === id ? { ...r, ...data, updatedAt: new Date().toISOString() } : r
       );
-      AsyncStorage.setItem('assistance_requests', JSON.stringify(updated)).catch(e =>
-        console.log('[RequestsContext] Save error:', e)
-      );
+      AsyncStorage.setItem('assistance_requests', JSON.stringify(updated)).catch(() => {});
       return updated;
     });
   }, []);

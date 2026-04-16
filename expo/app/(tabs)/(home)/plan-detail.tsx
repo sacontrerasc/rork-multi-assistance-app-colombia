@@ -34,7 +34,7 @@ import {
   Search,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { plans } from '@/mocks/plans';
+import { plans } from '@/constants/plans';
 import { useAuth } from '@/contexts/AuthContext';
 
 const COLOMBIAN_CITIES = [
