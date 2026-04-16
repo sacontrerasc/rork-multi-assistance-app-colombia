@@ -34,6 +34,7 @@ import {
   HeartPulse,
   Users,
   Star,
+  User,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { categories } from '@/mocks/categories';
@@ -96,11 +97,7 @@ export default function HomeScreen() {
   const [suggestionsScrollX, setSuggestionsScrollX] = useState<number>(0);
   const [suggestions] = useState<Service[]>(() => getRandomSuggestions(5));
 
-  useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
-      router.replace('/(auth)/login');
-    }
-  }, [isAuthenticated, isLoading]);
+
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -160,15 +157,7 @@ export default function HomeScreen() {
     router.push('/request-service?serviceId=s4&emergency=true');
   };
 
-  if (!isAuthenticated) {
-    return (
-      <View style={styles.container}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: Colors.textMuted }}>Cargando...</Text>
-        </View>
-      </View>
-    );
-  }
+
 
   return (
     <View style={styles.container}>
@@ -180,43 +169,72 @@ export default function HomeScreen() {
           <View style={styles.headerLeft}>
             <View style={styles.avatarCircle}>
               <Text style={styles.avatarText}>
-                {user?.name?.charAt(0) ?? 'U'}
+                {isAuthenticated ? (user?.name?.charAt(0) ?? 'U') : 'CL'}
               </Text>
             </View>
             <View>
               <Text style={styles.greeting}>{greeting()}</Text>
-              <Text style={styles.userName}>{user?.name ?? 'Usuario'}</Text>
+              <Text style={styles.userName}>{isAuthenticated ? (user?.name ?? 'Usuario') : 'Bienvenido'}</Text>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.bellBtn}
-            onPress={() => router.push('/notifications')}
-            activeOpacity={0.7}
-            testID="notifications-button"
-          >
-            <Bell color={Colors.white} size={22} />
-            {activeRequests.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{activeRequests.length}</Text>
-              </View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.bellBtn}
+              onPress={() => router.push('/notifications')}
+              activeOpacity={0.7}
+              testID="notifications-button"
+            >
+              <Bell color={Colors.white} size={22} />
+              {activeRequests.length > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{activeRequests.length}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            {!isAuthenticated && (
+              <TouchableOpacity
+                style={styles.userBtn}
+                onPress={() => router.push('/(auth)/login')}
+                activeOpacity={0.7}
+                testID="login-button"
+              >
+                <User color={Colors.white} size={22} />
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
+          </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.planCard}
-          activeOpacity={0.8}
-          onPress={() => router.push('/(tabs)/profile')}
-        >
-          <View style={styles.planCardLeft}>
-            <Shield color={Colors.secondary} size={20} />
-            <View>
-              <Text style={styles.planLabel}>Tu Plan Activo</Text>
-              <Text style={styles.planName}>Plan Familiar Premium</Text>
+        {isAuthenticated ? (
+          <TouchableOpacity
+            style={styles.planCard}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <View style={styles.planCardLeft}>
+              <Shield color={Colors.secondary} size={20} />
+              <View>
+                <Text style={styles.planLabel}>Tu Plan Activo</Text>
+                <Text style={styles.planName}>Plan Familiar Premium</Text>
+              </View>
             </View>
-          </View>
-          <ChevronRight color="rgba(255,255,255,0.6)" size={18} />
-        </TouchableOpacity>
+            <ChevronRight color="rgba(255,255,255,0.6)" size={18} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.planCard}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(auth)/login')}
+          >
+            <View style={styles.planCardLeft}>
+              <Shield color={Colors.secondary} size={20} />
+              <View>
+                <Text style={styles.planLabel}>Inicia sesión</Text>
+                <Text style={styles.planName}>Para adquirir un plan</Text>
+              </View>
+            </View>
+            <ChevronRight color="rgba(255,255,255,0.6)" size={18} />
+          </TouchableOpacity>
+        )}
       </LinearGradient>
 
       <ScrollView

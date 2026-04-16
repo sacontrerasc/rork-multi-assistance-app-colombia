@@ -17,9 +17,12 @@ import {
   Truck,
   Search,
   AlertCircle,
+  LogIn,
 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useRequests } from '@/contexts/RequestsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { RequestStatus } from '@/types';
 
 const statusConfig: Record<RequestStatus, { label: string; color: string; icon: React.ComponentType<{ color: string; size: number }> }> = {
@@ -36,7 +39,38 @@ type TabKey = 'active' | 'completed';
 export default function RequestsScreen() {
   const insets = useSafeAreaInsets();
   const { activeRequests, completedRequests } = useRequests();
+  const { isAuthenticated } = useAuth();
   const [tab, setTab] = useState<TabKey>('active');
+
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <Text style={styles.headerTitle}>Mis Solicitudes</Text>
+          <Text style={styles.headerSubtitle}>Inicia sesión para ver tus solicitudes</Text>
+        </View>
+        <View style={requestsGuestStyles.content}>
+          <LogIn color={Colors.textMuted} size={48} />
+          <Text style={requestsGuestStyles.title}>Inicia sesión</Text>
+          <Text style={requestsGuestStyles.text}>
+            Necesitas una cuenta para solicitar servicios y ver su seguimiento
+          </Text>
+          <TouchableOpacity
+            style={requestsGuestStyles.loginBtn}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(auth)/login')}
+          >
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryDark]}
+              style={requestsGuestStyles.loginBtnGradient}
+            >
+              <Text style={requestsGuestStyles.loginBtnText}>Iniciar Sesión</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const displayRequests = tab === 'active' ? activeRequests : completedRequests;
 
@@ -144,6 +178,44 @@ export default function RequestsScreen() {
     </View>
   );
 }
+
+const requestsGuestStyles = StyleSheet.create({
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  text: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center' as const,
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  loginBtn: {
+    alignSelf: 'stretch',
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  loginBtnGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRadius: 14,
+  },
+  loginBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.white,
+  },
+});
 
 const styles = StyleSheet.create({
   container: {

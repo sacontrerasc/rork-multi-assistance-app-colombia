@@ -24,6 +24,7 @@ import {
   HelpCircle,
   Settings,
   CreditCard,
+  LogIn,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,8 +33,61 @@ import { useRequests } from '@/contexts/RequestsContext';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { requests } = useRequests();
+
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={[Colors.primary, Colors.primaryDark]}
+          style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
+        >
+          <View style={styles.profileRow}>
+            <View style={styles.avatar}>
+              <User color={Colors.white} size={28} />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>Mi Perfil</Text>
+              <Text style={styles.profileEmail}>Inicia sesión para acceder</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        <View style={guestStyles.content}>
+          <View style={guestStyles.card}>
+            <View style={guestStyles.iconWrap}>
+              <LogIn color={Colors.primary} size={40} />
+            </View>
+            <Text style={guestStyles.title}>Inicia sesión</Text>
+            <Text style={guestStyles.description}>
+              Para adquirir planes, solicitar servicios y gestionar tus compras necesitas una cuenta.
+            </Text>
+            <TouchableOpacity
+              style={guestStyles.loginBtn}
+              activeOpacity={0.8}
+              onPress={() => router.push('/(auth)/login')}
+              testID="profile-login-btn"
+            >
+              <LinearGradient
+                colors={[Colors.primary, Colors.primaryDark]}
+                style={guestStyles.loginBtnGradient}
+              >
+                <Text style={guestStyles.loginBtnText}>Iniciar Sesión</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={guestStyles.registerBtn}
+              activeOpacity={0.7}
+              onPress={() => router.push('/(auth)/register')}
+            >
+              <Text style={guestStyles.registerBtnText}>Crear una cuenta</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   const handleLogout = () => {
     Alert.alert(
@@ -255,6 +309,73 @@ const menuStyles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textPrimary,
     fontWeight: '500' as const,
+  },
+});
+
+const guestStyles = StyleSheet.create({
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  iconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primary + '12',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800' as const,
+    color: Colors.textPrimary,
+    marginBottom: 10,
+  },
+  description: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center' as const,
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  loginBtn: {
+    alignSelf: 'stretch',
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  loginBtnGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRadius: 14,
+  },
+  loginBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.white,
+  },
+  registerBtn: {
+    paddingVertical: 12,
+  },
+  registerBtnText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.secondary,
   },
 });
 
