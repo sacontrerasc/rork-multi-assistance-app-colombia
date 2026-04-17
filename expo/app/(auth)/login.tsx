@@ -161,16 +161,6 @@ export default function LoginScreen() {
               </LinearGradient>
             </TouchableOpacity>
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>o</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity style={styles.googleBtn} activeOpacity={0.7}>
-              <Text style={styles.googleBtnText}>Continuar con Google</Text>
-            </TouchableOpacity>
-
             <View style={styles.registerRow}>
               <Text style={styles.registerText}>¿No tienes cuenta? </Text>
               <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
@@ -290,33 +280,6 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.white,
     letterSpacing: 0.3,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 13,
-    color: Colors.textMuted,
-  },
-  googleBtn: {
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  googleBtnText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: Colors.textPrimary,
   },
   registerRow: {
     flexDirection: 'row',
