@@ -47,10 +47,9 @@ import { Service } from '@/types';
 const { width } = Dimensions.get('window');
 const SUGGESTION_CARD_WIDTH = width * 0.38;
 
-function getRandomSuggestions(count: number): Service[] {
+function getSuggestions(count: number): Service[] {
   const pool = services.filter(s => suggestedServiceIds.includes(s.id));
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+  return pool.slice(0, count);
 }
 
 function formatPrice(price: number): string {
@@ -95,7 +94,7 @@ export default function HomeScreen() {
   const [plansScrollX, setPlansScrollX] = useState<number>(0);
   const suggestionsScrollRef = useRef<ScrollView>(null);
   const [suggestionsScrollX, setSuggestionsScrollX] = useState<number>(0);
-  const [suggestions] = useState<Service[]>(() => getRandomSuggestions(5));
+  const [suggestions] = useState<Service[]>(() => getSuggestions(5));
 
 
 
@@ -217,8 +216,8 @@ export default function HomeScreen() {
             <View style={styles.planCardLeft}>
               <Shield color={Colors.secondary} size={20} />
               <View>
-                <Text style={styles.planLabel}>Tu Plan Activo</Text>
-                <Text style={styles.planName}>Plan Familiar Premium</Text>
+                <Text style={styles.planLabel}>Mi cuenta</Text>
+                <Text style={styles.planName}>Consulta tus planes</Text>
               </View>
             </View>
             <ChevronRight color="rgba(255,255,255,0.6)" size={18} />
