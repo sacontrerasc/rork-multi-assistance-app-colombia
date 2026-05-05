@@ -13,7 +13,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   User,
   Shield,
-  Users,
   Clock,
   ChevronRight,
   LogOut,
@@ -25,15 +24,32 @@ import {
   Settings,
   CreditCard,
   LogIn,
+  Bell,
+  ClipboardList,
+  Truck,
+  Search,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequests } from '@/contexts/RequestsContext';
+import { RequestStatus } from '@/types';
+
+const statusConfig: Record<RequestStatus, { label: string; color: string; icon: React.ComponentType<{ color: string; size: number }> }> = {
+  solicitado: { label: 'Solicitado', color: Colors.secondary, icon: Clock },
+  validando: { label: 'Validando', color: Colors.warning, icon: Search },
+  proveedor_asignado: { label: 'Proveedor Asignado', color: Colors.primary, icon: AlertCircle },
+  en_camino: { label: 'En Camino', color: '#8B5CF6', icon: Truck },
+  completado: { label: 'Completado', color: Colors.success, icon: CheckCircle2 },
+  cancelado: { label: 'Cancelado', color: Colors.danger, icon: XCircle },
+};
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout, isAuthenticated } = useAuth();
-  const { requests } = useRequests();
+  const { requests, activeRequests } = useRequests();
 
   if (!isAuthenticated) {
     return (
@@ -107,6 +123,17 @@ export default function ProfileScreen() {
   };
 
   const completedCount = requests.filter(r => r.status === 'completado').length;
+  const unreadNotifications = activeRequests.length;
+
+  const formatShortDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('es-CO', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -148,6 +175,73 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <TouchableOpacity
+          style={styles.notifBanner}
+          activeOpacity={0.7}
+          onPress={() => router.push('/notifications')}
+          testID="profile-notifications-btn"
+        >
+          <View style={styles.notifIconWrap}>
+            <Bell color={Colors.primary} size={20} />
+            {unreadNotifications > 0 && (
+              <View style={styles.notifDot}>
+                <Text style={styles.notifDotText}>{unreadNotifications}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.notifInfo}>
+            <Text style={styles.notifTitle}>Notificaciones</Text>
+            <Text style={styles.notifSubtitle}>
+              {unreadNotifications > 0
+                ? `${unreadNotifications} actualizaci${unreadNotifications !== 1 ? 'ones' : 'ón'} de tus servicios`
+                : 'Sin notificaciones nuevas'}
+            </Text>
+          </View>
+          <ChevronRight color={Colors.textMuted} size={18} />
+        </TouchableOpacity>
+
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Solicitudes Activas</Text>
+          {activeRequests.length > 0 && (
+            <TouchableOpacity onPress={() => router.push('/(tabs)/requests')}>
+              <Text style={styles.seeAllText}>Ver todas</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {activeRequests.length === 0 ? (
+          <View style={styles.emptyActiveCard}>
+            <ClipboardList color={Colors.textMuted} size={28} />
+            <Text style={styles.emptyActiveText}>No hay solicitudes activas</Text>
+          </View>
+        ) : (
+          <View style={{ marginBottom: 20 }}>
+            {activeRequests.slice(0, 3).map(req => {
+              const config = statusConfig[req.status];
+              const StatusIcon = config.icon;
+              return (
+                <TouchableOpacity
+                  key={req.id}
+                  style={styles.activeReqCard}
+                  activeOpacity={0.7}
+                  onPress={() => router.push(`/request-tracking?id=${req.id}`)}
+                  testID={`profile-active-${req.id}`}
+                >
+                  <View style={[styles.activeReqIcon, { backgroundColor: config.color + '15' }]}>
+                    <StatusIcon color={config.color} size={18} />
+                  </View>
+                  <View style={styles.activeReqInfo}>
+                    <Text style={styles.activeReqName} numberOfLines={1}>{req.serviceName}</Text>
+                    <Text style={styles.activeReqMeta} numberOfLines={1}>
+                      {config.label} · {formatShortDate(req.updatedAt)}
+                    </Text>
+                  </View>
+                  <ChevronRight color={Colors.textMuted} size={16} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
         <View style={styles.planCard}>
           <View style={styles.planHeader}>
             <View style={styles.planIconWrap}>
@@ -415,6 +509,115 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingTop: 16,
+  },
+  notifBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 12,
+  },
+  notifIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.primary + '12',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative' as const,
+  },
+  notifDot: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    borderRadius: 9,
+    backgroundColor: Colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.white,
+  },
+  notifDotText: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: Colors.white,
+  },
+  notifInfo: {
+    flex: 1,
+  },
+  notifTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+  },
+  notifSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.secondary,
+  },
+  emptyActiveCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  emptyActiveText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  activeReqCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  activeReqIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeReqInfo: {
+    flex: 1,
+  },
+  activeReqName: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+  },
+  activeReqMeta: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   planCard: {
     backgroundColor: Colors.white,
