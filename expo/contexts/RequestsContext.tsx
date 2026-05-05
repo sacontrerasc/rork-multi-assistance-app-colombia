@@ -9,6 +9,14 @@ export const [RequestsProvider, useRequests] = createContextHook(() => {
   useEffect(() => {
     const load = async () => {
       try {
+        const STORAGE_VERSION = 'v2_prod';
+        const currentVersion = await AsyncStorage.getItem('assistance_requests_version');
+        if (currentVersion !== STORAGE_VERSION) {
+          await AsyncStorage.removeItem('assistance_requests');
+          await AsyncStorage.setItem('assistance_requests_version', STORAGE_VERSION);
+          setRequests([]);
+          return;
+        }
         const stored = await AsyncStorage.getItem('assistance_requests');
         if (stored) {
           setRequests(JSON.parse(stored));
