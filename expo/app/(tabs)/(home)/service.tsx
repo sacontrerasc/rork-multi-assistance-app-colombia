@@ -154,19 +154,29 @@ export default function ServiceDetailScreen() {
             style={styles.cartBtn}
             activeOpacity={0.7}
             onPress={() => {
-              if (isAuthenticated) {
-                console.log('Add to cart:', service.id);
-              } else {
+              if (!isAuthenticated) {
                 router.push({
                   pathname: '/(auth)/login',
                   params: { redirect: `/service?id=${service.id}` }
                 });
+                return;
               }
+              if (!service.price) return;
+              router.push({
+                pathname: '/checkout',
+                params: {
+                  amount: String(service.price),
+                  description: service.name,
+                  itemId: service.id,
+                  itemType: 'service',
+                },
+              });
             }}
+            disabled={!service.price}
             testID="add-to-cart-btn"
           >
             <ShoppingCart color={Colors.primary} size={18} />
-            <Text style={styles.cartBtnText}>Añadir al Carrito</Text>
+            <Text style={styles.cartBtnText}>Pagar ahora</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.buyBtn}

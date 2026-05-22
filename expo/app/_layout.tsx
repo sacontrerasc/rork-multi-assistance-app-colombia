@@ -37,6 +37,13 @@ function RootLayoutNav() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="checkout"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );

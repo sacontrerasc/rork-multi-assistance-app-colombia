@@ -96,17 +96,25 @@ export default function PlanDetailScreen() {
     setQuantity(prev => Math.max(1, Math.min(10, prev + delta)));
   }, []);
 
-  const getPriceDisplay = useCallback(() => {
-    if (!plan?.priceRange) return '';
+  const getTotalAmount = useCallback((): number => {
+    if (!plan?.priceRange) return 0;
     const parts = plan.priceRange.replace(/\$/g, '').replace(/\s/g, '').split('–');
-    if (parts.length !== 2) return plan.priceRange;
+    if (parts.length !== 2) {
+      const single = parseInt(plan.priceRange.replace(/[^0-9]/g, ''), 10);
+      return isNaN(single) ? 0 : single * quantity;
+    }
     const low = parseInt(parts[0].replace(/\./g, ''), 10);
     const high = parseInt(parts[1].replace(/\./g, ''), 10);
-    if (isNaN(low) || isNaN(high)) return plan.priceRange;
+    if (isNaN(low) || isNaN(high)) return 0;
     const price = billingType === 'mensual' ? low : high;
-    const total = price * quantity;
-    return `$ ${total.toLocaleString('es-CO')}`;
+    return price * quantity;
   }, [plan, billingType, quantity]);
+
+  const getPriceDisplay = useCallback(() => {
+    const total = getTotalAmount();
+    if (!total) return plan?.priceRange ?? '';
+    return `$ ${total.toLocaleString('es-CO')}`;
+  }, [getTotalAmount, plan]);
 
   const getPriceUnit = useCallback(() => {
     return billingType === 'mensual' ? '/mes' : '/año';
@@ -242,14 +250,25 @@ export default function PlanDetailScreen() {
             activeOpacity={0.7}
             testID="buy-now-btn"
             onPress={() => {
-              if (isAuthenticated) {
-                console.log('Comprar plan:', plan?.id);
-              } else {
+              if (!isAuthenticated) {
                 router.push({
                   pathname: '/(auth)/login',
                   params: { redirect: `/plan-detail?id=${plan?.id}` }
                 });
+                return;
               }
+              const total = getTotalAmount();
+              if (total <= 0) return;
+              const desc = `${plan?.name ?? 'Plan'} - ${billingType === 'mensual' ? 'Mensual' : 'Anual'} x${quantity}`;
+              router.push({
+                pathname: '/checkout',
+                params: {
+                  amount: String(total),
+                  description: desc,
+                  itemId: plan?.id ?? '',
+                  itemType: 'plan',
+                },
+              });
             }}
           >
             <LinearGradient
@@ -268,18 +287,29 @@ export default function PlanDetailScreen() {
             activeOpacity={0.7}
             testID="add-to-cart-btn"
             onPress={() => {
-              if (isAuthenticated) {
-                console.log('Añadir al carrito:', plan?.id);
-              } else {
+              if (!isAuthenticated) {
                 router.push({
                   pathname: '/(auth)/login',
                   params: { redirect: `/plan-detail?id=${plan?.id}` }
                 });
+                return;
               }
+              const total = getTotalAmount();
+              if (total <= 0) return;
+              const desc = `${plan?.name ?? 'Plan'} - ${billingType === 'mensual' ? 'Mensual' : 'Anual'} x${quantity}`;
+              router.push({
+                pathname: '/checkout',
+                params: {
+                  amount: String(total),
+                  description: desc,
+                  itemId: plan?.id ?? '',
+                  itemType: 'plan',
+                },
+              });
             }}
           >
             <ShoppingCart color={Colors.primary} size={18} />
-            <Text style={styles.addToCartText}>Añadir al carrito</Text>
+            <Text style={styles.addToCartText}>Pagar ahora</Text>
           </TouchableOpacity>
         </View>
 
