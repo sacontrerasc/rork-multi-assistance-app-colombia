@@ -24,12 +24,10 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  createPaymentLink,
-  extractPaymentUrl,
-  PaymentService,
-  PaymentsConfig,
-} from '@/services/paymentsApi';
+import { usePayments } from '@/hooks/usePayments';
+import type { PaymentServiceId } from '@/types/payments';
+
+type PaymentService = PaymentServiceId;
 
 type Method = { id: PaymentService; name: string; description: string; icon: React.ComponentType<{ color: string; size: number }> };
 
@@ -59,8 +57,8 @@ export default function CheckoutScreen() {
   }, [params.description]);
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentService>(1);
-  const [loading, setLoading] = useState<boolean>(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const { startPaymentLink, loading, isConfigured } = usePayments();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -69,7 +67,7 @@ export default function CheckoutScreen() {
   }, [isAuthenticated]);
 
   const handlePay = async () => {
-    if (!PaymentsConfig.isConfigured()) {
+    if (!isConfigured) {
       Alert.alert('Pasarela no configurada', 'Falta configurar las credenciales de Payments.');
       return;
     }
@@ -77,29 +75,22 @@ export default function CheckoutScreen() {
       Alert.alert('Monto inválido', 'El monto a pagar debe ser mayor que cero.');
       return;
     }
+    if (!user?.email) {
+      Alert.alert('Sesión requerida', 'Debes iniciar sesión para pagar.');
+      return;
+    }
     try {
-      setLoading(true);
-      const resp = await createPaymentLink({
+      const result = await startPaymentLink({
         amount,
         description,
-        services: [selectedMethod],
-        idPerson: 0,
+        service: selectedMethod,
+        customerEmail: user.email,
+        customerName: user.name,
       });
-      const url = extractPaymentUrl(resp);
-      if (!url) {
-        throw new Error('La pasarela no devolvió una URL de pago válida.');
-      }
-      setPaymentUrl(url);
-      if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined') window.open(url, '_blank');
-      } else {
-        await WebBrowser.openBrowserAsync(url);
-      }
+      if (result.paymentUrl) setPaymentUrl(result.paymentUrl);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'No se pudo iniciar el pago';
       Alert.alert('Error al crear el pago', msg);
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -44,6 +44,13 @@ function RootLayoutNav() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="payments-test"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
