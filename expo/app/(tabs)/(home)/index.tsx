@@ -9,6 +9,7 @@ import {
   Dimensions,
   Platform,
   Image,
+  Linking,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -475,11 +476,17 @@ export default function HomeScreen() {
             <View style={styles.infoCardContent}>
               <Text style={styles.infoCardTitle}>¿Necesitas ayuda?</Text>
               <Text style={styles.infoCardText}>
-                Línea de atención 24/7{'\n'}
-                <Text style={styles.infoCardPhone}>01 800 123 4567</Text>
+                Si tienes alguna duda, contáctanos:{'\n'}
+                <Text style={styles.infoCardPhone}>servicioalcliente@cltiene.com</Text>{'\n'}
+                Cra 12 # 79 32 Edificio Orión{'\n'}
+                <Text style={styles.infoCardPhone}>+(601) 552 3325</Text>
               </Text>
             </View>
-            <TouchableOpacity style={styles.infoCardBtn}>
+            <TouchableOpacity
+              style={styles.infoCardBtn}
+              onPress={() => Linking.openURL('tel:+6015523325')}
+              testID="help-call-btn"
+            >
               <Phone color={Colors.white} size={18} />
             </TouchableOpacity>
           </LinearGradient>
