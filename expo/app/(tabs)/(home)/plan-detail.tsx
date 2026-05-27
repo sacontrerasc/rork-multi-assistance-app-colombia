@@ -34,7 +34,7 @@ import {
   Search,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { plans } from '@/constants/plans';
+import { plans, formatCOP, type PlanTier } from '@/constants/plans';
 import { useAuth } from '@/contexts/AuthContext';
 
 const COLOMBIAN_CITIES = [
@@ -54,7 +54,7 @@ const COLOMBIAN_CITIES = [
   'Uribia', 'Zipaquirá',
 ];
 
-type BillingType = 'mensual' | 'anual';
+type BillingType = 'semestral' | 'anual';
 
 export default function PlanDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -65,7 +65,8 @@ export default function PlanDetailScreen() {
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [showCityModal, setShowCityModal] = useState<boolean>(false);
   const [citySearch, setCitySearch] = useState<string>('');
-  const [billingType, setBillingType] = useState<BillingType>('mensual');
+  const [billingType, setBillingType] = useState<BillingType>('semestral');
+  const [selectedTierId, setSelectedTierId] = useState<string>(plan?.tiers[0]?.id ?? '');
   const [quantity, setQuantity] = useState<number>(1);
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const heartScale = useRef(new Animated.Value(1)).current;
@@ -96,28 +97,23 @@ export default function PlanDetailScreen() {
     setQuantity(prev => Math.max(1, Math.min(10, prev + delta)));
   }, []);
 
+  const selectedTier: PlanTier | undefined =
+    plan?.tiers.find((t) => t.id === selectedTierId) ?? plan?.tiers[0];
+
   const getTotalAmount = useCallback((): number => {
-    if (!plan?.priceRange) return 0;
-    const parts = plan.priceRange.replace(/\$/g, '').replace(/\s/g, '').split('–');
-    if (parts.length !== 2) {
-      const single = parseInt(plan.priceRange.replace(/[^0-9]/g, ''), 10);
-      return isNaN(single) ? 0 : single * quantity;
-    }
-    const low = parseInt(parts[0].replace(/\./g, ''), 10);
-    const high = parseInt(parts[1].replace(/\./g, ''), 10);
-    if (isNaN(low) || isNaN(high)) return 0;
-    const price = billingType === 'mensual' ? low : high;
-    return price * quantity;
-  }, [plan, billingType, quantity]);
+    if (!selectedTier) return 0;
+    const unit = billingType === 'semestral' ? selectedTier.priceSemestral : selectedTier.priceAnual;
+    return unit * quantity;
+  }, [selectedTier, billingType, quantity]);
 
   const getPriceDisplay = useCallback(() => {
     const total = getTotalAmount();
-    if (!total) return plan?.priceRange ?? '';
-    return `$ ${total.toLocaleString('es-CO')}`;
-  }, [getTotalAmount, plan]);
+    if (!total) return '';
+    return formatCOP(total);
+  }, [getTotalAmount]);
 
   const getPriceUnit = useCallback(() => {
-    return billingType === 'mensual' ? '/mes' : '/año';
+    return billingType === 'semestral' ? '/semestre' : '/año';
   }, [billingType]);
 
   if (!plan) {
@@ -160,10 +156,12 @@ export default function PlanDetailScreen() {
           </View>
           <Text style={styles.planName}>{plan.name}</Text>
           <Text style={styles.planTagline}>{plan.tagline}</Text>
-          {plan.priceRange ? (
+          {selectedTier ? (
             <View style={styles.priceTag}>
               <DollarSign color={Colors.white} size={14} />
-              <Text style={styles.priceText}>{plan.priceRange}</Text>
+              <Text style={styles.priceText}>
+                Desde {formatCOP(selectedTier.priceSemestral)} semestral
+              </Text>
             </View>
           ) : null}
         </View>
@@ -188,14 +186,37 @@ export default function PlanDetailScreen() {
             <ChevronDown color={Colors.textMuted} size={18} />
           </TouchableOpacity>
 
+          {plan.tiers.length > 1 && (
+            <View style={styles.tierToggle}>
+              {plan.tiers.map((t) => (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[styles.tierOption, selectedTierId === t.id && styles.tierOptionActive]}
+                  onPress={() => setSelectedTierId(t.id)}
+                  activeOpacity={0.7}
+                  testID={`tier-${t.id}`}
+                >
+                  <Text
+                    style={[
+                      styles.tierOptionText,
+                      selectedTierId === t.id && styles.tierOptionTextActive,
+                    ]}
+                  >
+                    {t.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           <View style={styles.billingToggle}>
             <TouchableOpacity
-              style={[styles.billingOption, billingType === 'mensual' && styles.billingOptionActive]}
-              onPress={() => setBillingType('mensual')}
+              style={[styles.billingOption, billingType === 'semestral' && styles.billingOptionActive]}
+              onPress={() => setBillingType('semestral')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.billingOptionText, billingType === 'mensual' && styles.billingOptionTextActive]}>
-                Mensual
+              <Text style={[styles.billingOptionText, billingType === 'semestral' && styles.billingOptionTextActive]}>
+                Semestral
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -206,9 +227,6 @@ export default function PlanDetailScreen() {
               <Text style={[styles.billingOptionText, billingType === 'anual' && styles.billingOptionTextActive]}>
                 Anual
               </Text>
-              <View style={styles.saveBadge}>
-                <Text style={styles.saveBadgeText}>Ahorra</Text>
-              </View>
             </TouchableOpacity>
           </View>
 
@@ -259,13 +277,14 @@ export default function PlanDetailScreen() {
               }
               const total = getTotalAmount();
               if (total <= 0) return;
-              const desc = `${plan?.name ?? 'Plan'} - ${billingType === 'mensual' ? 'Mensual' : 'Anual'} x${quantity}`;
+              const tierLabel = selectedTier ? ` ${selectedTier.name}` : '';
+              const desc = `${plan?.name ?? 'Plan'}${tierLabel} - ${billingType === 'semestral' ? 'Semestral' : 'Anual'} x${quantity}`;
               router.push({
                 pathname: '/checkout',
                 params: {
                   amount: String(total),
                   description: desc,
-                  itemId: plan?.id ?? '',
+                  itemId: `${plan?.id ?? ''}_${selectedTier?.id ?? ''}`,
                   itemType: 'plan',
                 },
               });
@@ -296,13 +315,14 @@ export default function PlanDetailScreen() {
               }
               const total = getTotalAmount();
               if (total <= 0) return;
-              const desc = `${plan?.name ?? 'Plan'} - ${billingType === 'mensual' ? 'Mensual' : 'Anual'} x${quantity}`;
+              const tierLabel = selectedTier ? ` ${selectedTier.name}` : '';
+              const desc = `${plan?.name ?? 'Plan'}${tierLabel} - ${billingType === 'semestral' ? 'Semestral' : 'Anual'} x${quantity}`;
               router.push({
                 pathname: '/checkout',
                 params: {
                   amount: String(total),
                   description: desc,
-                  itemId: plan?.id ?? '',
+                  itemId: `${plan?.id ?? ''}_${selectedTier?.id ?? ''}`,
                   itemType: 'plan',
                 },
               });
@@ -317,7 +337,7 @@ export default function PlanDetailScreen() {
           <Text style={styles.descriptionText}>{plan.description}</Text>
         </View>
 
-        {plan.sections.map((section, sIndex) => (
+        {(selectedTier?.sections ?? []).map((section, sIndex) => (
           <View key={sIndex} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionEmoji}>{section.emoji}</Text>
@@ -555,15 +575,35 @@ const styles = StyleSheet.create({
   billingOptionTextActive: {
     color: Colors.primary,
   },
-  saveBadge: {
-    backgroundColor: Colors.lightGreen,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+  tierToggle: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+    backgroundColor: Colors.background,
+    borderRadius: 14,
+    padding: 4,
   },
-  saveBadgeText: {
-    fontSize: 10,
-    fontWeight: '700' as const,
+  tierOption: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  tierOptionActive: {
+    backgroundColor: Colors.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tierOptionText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+  },
+  tierOptionTextActive: {
     color: Colors.primary,
   },
   quantityRow: {
