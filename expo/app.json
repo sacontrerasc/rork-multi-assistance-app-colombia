@@ -14,15 +14,31 @@
       "backgroundColor": "#1a1a2e"
     },
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "app.rork.multi-assistance-app-colombia"
+      "supportsTablet": true,
+      "bundleIdentifier": "app.rork.multi-assistance-app-colombia",
+      "splash": {
+        "image": "./assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#1a1a2e",
+        "tabletImage": "./assets/images/splash.png"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1a1a2e"
       },
-      "package": "app.rork.multi_assistance_app_colombia"
+      "package": "app.rork.multi_assistance_app_colombia",
+      "splash": {
+        "image": "./assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#1a1a2e",
+        "mdpi": "./assets/images/splash.png",
+        "hdpi": "./assets/images/splash.png",
+        "xhdpi": "./assets/images/splash.png",
+        "xxhdpi": "./assets/images/splash.png",
+        "xxxhdpi": "./assets/images/splash.png"
+      }
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -36,7 +52,16 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#1a1a2e"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
