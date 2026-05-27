@@ -14,12 +14,13 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, signInWithGoogle, isSigningIn, authError, clearAuthError } = useAuth();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -42,6 +43,16 @@ export default function LoginScreen() {
       }),
     ]).start();
   }, [fadeAnim, slideAnim]);
+
+  const handleGoogle = async () => {
+    clearAuthError();
+    await signInWithGoogle();
+    if (redirect) {
+      router.replace(redirect as string);
+    } else {
+      router.replace('/(tabs)/(home)');
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -143,7 +154,7 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={loading || isSigningIn}
               activeOpacity={0.8}
               testID="login-submit"
             >
@@ -160,6 +171,42 @@ export default function LoginScreen() {
                 )}
               </LinearGradient>
             </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>o continúa con</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.googleBtn, isSigningIn && styles.loginBtnDisabled]}
+              onPress={handleGoogle}
+              disabled={loading || isSigningIn}
+              activeOpacity={0.8}
+              testID="login-google"
+            >
+              {isSigningIn ? (
+                <ActivityIndicator color={Colors.primary} />
+              ) : (
+                <>
+                  <Image
+                    source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
+                    style={styles.googleIcon}
+                    contentFit="contain"
+                  />
+                  <Text style={styles.googleBtnText}>Continuar con Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {authError && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{authError}</Text>
+                <TouchableOpacity onPress={clearAuthError}>
+                  <Text style={styles.errorDismiss}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             <View style={styles.registerRow}>
               <Text style={styles.registerText}>¿No tienes cuenta? </Text>
@@ -294,5 +341,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.secondary,
     fontWeight: '700' as const,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: '600' as const,
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+  },
+  googleBtnText: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  errorText: {
+    flex: 1,
+    color: '#DC2626',
+    fontSize: 13,
+  },
+  errorDismiss: {
+    color: '#DC2626',
+    fontWeight: '700' as const,
+    marginLeft: 8,
   },
 });
