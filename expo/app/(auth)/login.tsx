@@ -48,7 +48,7 @@ export default function LoginScreen() {
     clearAuthError();
     await signInWithGoogle();
     if (redirect) {
-      router.replace(redirect as string);
+      router.replace(redirect as never);
     } else {
       router.replace('/(tabs)/(home)');
     }
@@ -63,7 +63,7 @@ export default function LoginScreen() {
     try {
       await login(email, password);
       if (redirect) {
-        router.replace(redirect as string);
+        router.replace(redirect as never);
       } else {
         router.replace('/(tabs)/(home)');
       }

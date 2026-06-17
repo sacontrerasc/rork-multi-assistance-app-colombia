@@ -1,15 +1,45 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { RequestsProvider } from "@/contexts/RequestsContext";
 import { WipProvider } from "@/contexts/WipContext";
 
-void SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => {
+  /* ignore — native splash may not be available in Expo Go */
+});
 
 const queryClient = new QueryClient();
+
+/** Waits until auth is done bootstrapping, then hides the native splash.
+ *  Falls back to a 5 s timeout so the user never gets stuck. */
+function SplashGate({ onReady }: { onReady: () => void }) {
+  const { isLoading } = useAuth();
+  const calledRef = useRef(false);
+
+  useEffect(() => {
+    if (calledRef.current) return;
+
+    if (!isLoading) {
+      calledRef.current = true;
+      onReady();
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      if (!calledRef.current) {
+        calledRef.current = true;
+        onReady();
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [isLoading, onReady]);
+
+  return null;
+}
 
 function RootLayoutNav() {
   return (
@@ -57,7 +87,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  useEffect(() => {
+  const hideSplash = useCallback(() => {
     void SplashScreen.hideAsync();
   }, []);
 
@@ -65,6 +95,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AuthProvider>
+          <SplashGate onReady={hideSplash} />
           <WipProvider>
             <RequestsProvider>
               <RootLayoutNav />
