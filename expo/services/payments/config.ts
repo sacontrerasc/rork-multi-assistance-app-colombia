@@ -1,42 +1,45 @@
 /**
  * Configuración central de la pasarela Payments.
  * Lee variables de entorno EXPO_PUBLIC_PAYMENTS_*.
+ *
+ * EXPO_PUBLIC_PAYMENTS_BASE_URL — URL completa de producción (preferida).
+ * Si no se define, se construye desde HOST + PORT + HTTPS.
  */
 
-const RAW_HTTPS = process.env.EXPO_PUBLIC_PAYMENTS_HTTPS ?? 'true';
+const BASE_URL = (process.env.EXPO_PUBLIC_PAYMENTS_BASE_URL ?? '').replace(/\/+$/, '');
 const HOST = process.env.EXPO_PUBLIC_PAYMENTS_HOST ?? '';
-const PORT = process.env.EXPO_PUBLIC_PAYMENTS_PORT ?? '';
 const API_KEY = process.env.EXPO_PUBLIC_PAYMENTS_API_KEY ?? '';
 const TERMINAL_ID = Number(process.env.EXPO_PUBLIC_PAYMENTS_TERMINAL_ID ?? '0');
 const FORM_ID = Number(process.env.EXPO_PUBLIC_PAYMENTS_FORM_ID ?? '0');
 
 function resolveScheme(): 'http' | 'https' {
-  const v = String(RAW_HTTPS).toLowerCase().trim();
-  if (v === 'false' || v === '0' || v === 'no' || v === 'http') return 'http';
+  const raw = String(process.env.EXPO_PUBLIC_PAYMENTS_HTTPS ?? 'true').toLowerCase().trim();
+  if (raw === 'false' || raw === '0' || raw === 'no' || raw === 'http') return 'http';
   return 'https';
 }
 
 /**
  * Devuelve la BASE_URL completa de la pasarela.
- * Si el puerto es el estándar de su esquema, se omite.
+ * Prioriza EXPO_PUBLIC_PAYMENTS_BASE_URL; si no existe, construye desde HOST+PORT.
  */
 export function getPaymentsBaseUrl(): string {
+  if (BASE_URL) return BASE_URL;
   if (!HOST) return '';
   const scheme = resolveScheme();
-  const portNum = Number(PORT);
+  const port = process.env.EXPO_PUBLIC_PAYMENTS_PORT ?? '';
+  const portNum = Number(port);
   const isDefault =
     (scheme === 'https' && portNum === 443) ||
     (scheme === 'http' && portNum === 80) ||
-    !PORT;
-  return `${scheme}://${HOST}${isDefault ? '' : `:${PORT}`}`;
+    !port;
+  return `${scheme}://${HOST}${isDefault ? '' : `:${port}`}`;
 }
 
 export const PaymentsConfig = {
-  host: HOST,
-  port: PORT,
+  host: HOST || BASE_URL,
   apiKey: API_KEY,
   terminalId: TERMINAL_ID,
   formId: FORM_ID,
   baseUrl: getPaymentsBaseUrl(),
-  isConfigured: (): boolean => Boolean(HOST) && Boolean(API_KEY),
+  isConfigured: (): boolean => Boolean(getPaymentsBaseUrl()) && Boolean(API_KEY),
 };
